@@ -1,0 +1,18 @@
+---
+/**
+ * Cloudflare Turnstile widget.
+ * Set your site key in the env var PUBLIC_TURNSTILE_SITE_KEY (client-exposed).
+ */
+const siteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
+if (!siteKey) {
+  // Render nothing if not configured yet.
+}
+---
+{siteKey ? (
+  <>
+    <div class="cf-turnstile" data-sitekey={siteKey} data-theme="dark"></div>
+    <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+  </>
+) : (
+  <p class="disclaimer">Turnstile not configured yet (PUBLIC_TURNSTILE_SITE_KEY missing).</p>
+)}

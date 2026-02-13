@@ -1,0 +1,81 @@
+---
+import ToolLayout from "../../layouts/ToolLayout.astro";
+import EmailCapture from "../../components/EmailCapture.astro";
+import { calcPoints } from "../../lib/calc-points";
+import { fmtMoney, fmtNumber } from "../../lib/format";
+
+const title = "Rewards Points Value Calculator";
+const description = "Convert points to dollars using a cents-per-point estimate and see a realistic range.";
+
+const defaultInputs = { points: 60000, cpp: 1.0 };
+const initial = calcPoints(defaultInputs);
+const initialPayload = { tool: "points", inputs: defaultInputs, outputs: initial };
+---
+<ToolLayout title={title} description={description}>
+  <section class="card">
+    <h3>Enter your numbers</h3>
+    <div class="row two">
+      <div>
+        <label>Points earned</label>
+        <input id="points" inputmode="numeric" placeholder="60000" value={defaultInputs.points} />
+      </div>
+      <div>
+        <label>Value per point (cents)</label>
+        <input id="cpp" inputmode="decimal" placeholder="1.0" value={defaultInputs.cpp} />
+      </div>
+    </div>
+
+    <div id="result" class="result" style="margin-top:14px;">
+      <h4>Results</h4>
+      <div class="kv"><span>Estimated value</span><span class="mono">{fmtMoney(initial.value)}</span></div>
+      <div class="kv"><span>Typical range</span><span class="mono">{fmtMoney(initial.low)} – {fmtMoney(initial.high)}</span></div>
+      <div class="disclaimer" style="margin-top:10px;">Range uses 0.8¢ to 1.5¢ per point as a rough estimate.</div>
+    </div>
+  </section>
+
+  <EmailCapture tool="points" payload={initialPayload} />
+
+  <section class="card" style="margin-top:16px;">
+    <h3>Recommended next step (V1)</h3>
+    <p class="small">If your value is low, a simple cash-back card can beat complicated points. If it’s high, compare premium rewards cards—but only if you pay in full.</p>
+    <div class="btnRow">
+      <a class="btn primary" href="#affiliate">See card picks →</a>
+      <a class="btn" href="/tools/interest-calculator/">Check interest cost</a>
+    </div>
+    <div id="affiliate" class="disclaimer" style="margin-top:12px;">
+      Placeholder: add your affiliate cards list here (with disclosure).
+    </div>
+  </section>
+
+  <script is:inline>
+    (function(){
+      function num(v){ return Number(String(v).replace(/[^0-9.+-]/g,'')); }
+      function fmtMoney(n){ return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n||0); }
+
+      const $pts = document.getElementById('points');
+      const $cpp = document.getElementById('cpp');
+      const $r = document.getElementById('result');
+
+      function compute(){
+        const inputs = { points: num($pts.value), cpp: num($cpp.value) };
+        const points = Math.max(0, Math.min(1e12, inputs.points));
+        const cpp = Math.max(0, Math.min(10, inputs.cpp));
+        const value = points*(cpp/100);
+        const low = points*0.008;
+        const high = points*0.015;
+
+        $r.innerHTML = `
+          <h4>Results</h4>
+          <div class="kv"><span>Estimated value</span><span class="mono">${fmtMoney(value)}</span></div>
+          <div class="kv"><span>Typical range</span><span class="mono">${fmtMoney(low)} – ${fmtMoney(high)}</span></div>
+          <div class="disclaimer" style="margin-top:10px;">Range uses 0.8¢ to 1.5¢ per point as a rough estimate.</div>
+        `;
+
+        window.__CVL_PAYLOAD__ = { tool: "points", inputs, outputs: { value, low, high, cpp } };
+      }
+
+      compute();
+      [$pts,$cpp].forEach(el => el.addEventListener('input', compute));
+    })();
+  </script>
+</ToolLayout>

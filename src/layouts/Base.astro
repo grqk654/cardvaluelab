@@ -1,0 +1,56 @@
+---
+import "../styles/global.css";
+const { title = "CardValueLab — Credit card math, made simple", description = "Data-driven tools that quantify the true cost and value of credit card decisions.", canonical } = Astro.props;
+const url = new URL(Astro.request.url);
+const canon = canonical || url.origin + url.pathname;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canon} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta name="robots" content="index,follow" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canon} />
+  </head>
+  <body>
+    <header class="container">
+      <nav class="nav">
+        <a class="brand" href="/">
+          <div class="logo" aria-hidden="true"></div>
+          <span>CardValueLab</span>
+        </a>
+        <div class="btnRow" style="margin-top:0">
+          <a class="btn" href="/tools/interest-calculator/">Interest</a>
+          <a class="btn" href="/tools/points-value-calculator/">Points</a>
+          <a class="btn" href="/tools/balance-transfer-savings/">Balance Transfer</a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container">
+      <slot />
+    </main>
+
+    <footer class="container footer">
+      <div class="hr"></div>
+      <div class="grid grid-2">
+        <div>
+          <div class="notice"><strong>Not financial advice.</strong> Educational estimates only. Offers, rates, and terms change.</div>
+          <div class="disclaimer" style="margin-top:10px;">
+            © {new Date().getFullYear()} CardValueLab • <a href="/privacy/">Privacy</a> • <a href="/terms/">Terms</a> • <a href="/affiliate-disclosure/">Affiliate Disclosure</a>
+          </div>
+        </div>
+        <div class="disclaimer">
+          Tip: For best accuracy, use your statement APR and your real monthly payment amount. If your payment is below monthly interest, the balance will not shrink.
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

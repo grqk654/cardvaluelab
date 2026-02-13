@@ -1,0 +1,48 @@
+---
+import Base from "../layouts/Base.astro";
+import ToolCard from "../components/ToolCard.astro";
+---
+<Base title="CardValueLab — Stop guessing. Start calculating." description="Data-driven tools that quantify the true cost, rewards value, and ROI of credit card decisions.">
+  <section class="hero">
+    <div class="kicker"><span class="dot"></span><span class="badge">Utility-first finance</span></div>
+    <h1 class="h1">Stop guessing. Start calculating.</h1>
+    <p>Three fast tools to quantify interest cost, points value, and balance transfer savings. Built for clarity—no hype.</p>
+    <div class="btnRow">
+      <a class="btn primary" href="/tools/interest-calculator/">Run Interest Calculator →</a>
+      <a class="btn" href="/tools/points-value-calculator/">Value Your Points</a>
+      <a class="btn" href="/tools/balance-transfer-savings/">Balance Transfer Savings</a>
+    </div>
+  </section>
+
+  <div class="hr"></div>
+
+  <section>
+    <h2 class="h2">Core tools</h2>
+    <div class="grid grid-3" style="margin-top:14px;">
+      <ToolCard title="Credit Card Interest Calculator" href="/tools/interest-calculator/" desc="Estimate payoff time, total interest, and total paid based on your balance, APR, and monthly payment." />
+      <ToolCard title="Rewards Points Value Calculator" href="/tools/points-value-calculator/" desc="Convert points to dollars using a cents-per-point estimate and see a realistic value range." />
+      <ToolCard title="Balance Transfer Savings Calculator" href="/tools/balance-transfer-savings/" desc="Estimate whether a 0% promo plus a transfer fee is likely to save money—fast and simple." />
+    </div>
+  </section>
+
+  <div class="hr"></div>
+
+  <section class="grid grid-2">
+    <div class="card">
+      <h3>How this site makes decisions</h3>
+      <p class="small">We focus on measurable outcomes: interest cost, break-even points, and net value after fees. If the math doesn’t work, we say so.</p>
+      <ul class="small" style="color:rgba(255,255,255,.72); line-height:1.7; margin:10px 0 0 18px;">
+        <li>Transparent assumptions</li>
+        <li>Fast loading, no bloat</li>
+        <li>Tools before opinions</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Next: build topical authority</h3>
+      <p class="small">Each calculator will be supported by explainers (“What’s a good payment?”, “When does BT make sense?”) that link back to the tools.</p>
+      <div class="btnRow">
+        <a class="btn" href="/tools/interest-calculator/">Start with Interest →</a>
+      </div>
+    </div>
+  </section>
+</Base>

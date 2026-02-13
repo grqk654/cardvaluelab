@@ -1,0 +1,133 @@
+---
+import ToolLayout from "../../layouts/ToolLayout.astro";
+import EmailCapture from "../../components/EmailCapture.astro";
+import { calcInterest } from "../../lib/calc-interest";
+import { fmtMoney, fmtNumber, fmtPercent } from "../../lib/format";
+
+const title = "Credit Card Interest Calculator";
+const description = "Estimate payoff time, total interest, and total paid from your balance, APR, and monthly payment.";
+
+const defaultInputs = { balance: 4500, apr: 24.99, payment: 200 };
+const initial = calcInterest(defaultInputs);
+const initialPayload = { tool: "interest", inputs: defaultInputs, outputs: initial };
+---
+<ToolLayout title={title} description={description}>
+  <section class="card">
+    <h3>Enter your numbers</h3>
+    <div class="row">
+      <div>
+        <label>Current balance</label>
+        <input id="balance" inputmode="decimal" placeholder="4500" value={defaultInputs.balance} />
+      </div>
+      <div>
+        <label>APR</label>
+        <input id="apr" inputmode="decimal" placeholder="24.99" value={defaultInputs.apr} />
+      </div>
+      <div>
+        <label>Monthly payment</label>
+        <input id="payment" inputmode="decimal" placeholder="200" value={defaultInputs.payment} />
+      </div>
+    </div>
+
+    <div id="result" class={`result ${initial.feasible ? "" : "danger"}`} style="margin-top:14px;">
+      <h4>Results</h4>
+      {initial.feasible ? (
+        <div>
+          <div class="kv"><span>Estimated payoff time</span><span class="mono">{fmtNumber(initial.months)} months</span></div>
+          <div class="kv"><span>Estimated total interest</span><span class="mono">{fmtMoney(initial.totalInterest)}</span></div>
+          <div class="kv"><span>Estimated total paid</span><span class="mono">{fmtMoney(initial.totalPaid)}</span></div>
+          <div class="disclaimer" style="margin-top:10px;">Assumes no new purchases and a fixed monthly payment.</div>
+        </div>
+      ) : (
+        <div>
+          <p class="small" style="color:rgba(255,255,255,.85); margin:8px 0 8px;">
+            At this payment amount, your balance won’t decrease (your payment doesn’t cover monthly interest).
+          </p>
+          <div class="kv"><span>Minimum payment to reduce balance</span><span class="mono">{fmtMoney(initial.minPaymentToReduce)}</span></div>
+          <div class="disclaimer" style="margin-top:10px;">Tip: Increasing your payment even slightly above monthly interest changes everything.</div>
+        </div>
+      )}
+    </div>
+  </section>
+
+  <EmailCapture tool="interest" payload={initialPayload} />
+
+  <section class="card" style="margin-top:16px;">
+    <h3>Recommended next step (V1)</h3>
+    <p class="small">If your estimated total interest is high, consider comparing 0% intro APR or balance transfer options. (Replace with your affiliate picks.)</p>
+    <div class="btnRow">
+      <a class="btn primary" href="#affiliate">See 0% APR picks →</a>
+      <a class="btn" href="/tools/balance-transfer-savings/">Check BT savings</a>
+    </div>
+    <div id="affiliate" class="disclaimer" style="margin-top:12px;">
+      Placeholder: add your affiliate cards list here (with disclosure).
+    </div>
+  </section>
+
+  <section class="card" style="margin-top:16px;">
+    <h3>FAQ</h3>
+    <p class="small"><strong>Why does paying “on time” still sometimes hurt my score?</strong> Because utilization is often captured at statement close, not due date.</p>
+    <p class="small"><strong>Why can’t my balance drop?</strong> If your payment is less than monthly interest, the balance grows or stays flat.</p>
+  </section>
+
+  <script type="module" is:inline>
+    import { calcInterest } from '/_astro/calc-interest.js';
+  </script>
+
+  <script is:inline>
+    // Lightweight calculator runtime (no framework)
+    (function(){
+      function num(v){ return Number(String(v).replace(/[^0-9.+-]/g,'')); }
+      function fmtMoney(n){ return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n||0); }
+      function fmtNum(n){ return new Intl.NumberFormat('en-US',{maximumFractionDigits:0}).format(n||0); }
+
+      const $b = document.getElementById('balance');
+      const $a = document.getElementById('apr');
+      const $p = document.getElementById('payment');
+      const $r = document.getElementById('result');
+
+      function compute(){
+        const inputs = { balance: num($b.value), apr: num($a.value), payment: num($p.value) };
+        // Inline calc (mirrors server lib)
+        const balance = Math.max(0, Math.min(1e9, inputs.balance));
+        const apr = Math.max(0, Math.min(60, inputs.apr));
+        const payment = Math.max(0, Math.min(1e9, inputs.payment));
+        const monthlyRate = apr/100/12;
+        const minPaymentToReduce = balance*monthlyRate + 1;
+        const feasible = payment > balance*monthlyRate && payment>0;
+
+        let months=0,totalPaid=0,totalInterest=0;
+        if(feasible && balance>0){
+          const inner = 1 - (monthlyRate*balance)/payment;
+          months = Math.max(1, Math.round((-Math.log(inner))/Math.log(1+monthlyRate)));
+          totalPaid = months*payment;
+          totalInterest = Math.max(0,totalPaid-balance);
+        }
+
+        // Update results
+        $r.className = feasible ? 'result' : 'result danger';
+        $r.innerHTML = `
+          <h4>Results</h4>
+          ${feasible ? `
+            <div class="kv"><span>Estimated payoff time</span><span class="mono">${fmtNum(months)} months</span></div>
+            <div class="kv"><span>Estimated total interest</span><span class="mono">${fmtMoney(totalInterest)}</span></div>
+            <div class="kv"><span>Estimated total paid</span><span class="mono">${fmtMoney(totalPaid)}</span></div>
+            <div class="disclaimer" style="margin-top:10px;">Assumes no new purchases and a fixed monthly payment.</div>
+          ` : `
+            <p class="small" style="color:rgba(255,255,255,.85); margin:8px 0 8px;">
+              At this payment amount, your balance won’t decrease (your payment doesn’t cover monthly interest).
+            </p>
+            <div class="kv"><span>Minimum payment to reduce balance</span><span class="mono">${fmtMoney(minPaymentToReduce)}</span></div>
+            <div class="disclaimer" style="margin-top:10px;">Tip: increasing your payment even slightly above monthly interest changes everything.</div>
+          `}
+        `;
+
+        // Update EmailCapture payload embedded in the page (stored on window)
+        window.__CVL_PAYLOAD__ = { tool: "interest", inputs, outputs: { months, totalInterest, totalPaid, feasible, minPaymentToReduce } };
+      }
+
+      compute();
+      [$b,$a,$p].forEach(el => el.addEventListener('input', compute));
+    })();
+  </script>
+</ToolLayout>

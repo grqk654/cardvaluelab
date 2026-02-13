@@ -1,0 +1,126 @@
+---
+import ToolLayout from "../../layouts/ToolLayout.astro";
+import EmailCapture from "../../components/EmailCapture.astro";
+import { calcBalanceTransfer } from "../../lib/calc-bt";
+import { fmtMoney, fmtNumber } from "../../lib/format";
+
+const title = "Balance Transfer Savings Calculator";
+const description = "Estimate whether a 0% intro period (with a 3% transfer fee) is likely to save money versus keeping your current APR.";
+
+const defaultInputs = { balance: 6000, aprCurrent: 24.99, payment: 300, feePct: 3, promoMonths: 15 };
+const initial = calcBalanceTransfer(defaultInputs);
+const initialPayload = { tool: "bt", inputs: defaultInputs, outputs: initial };
+---
+<ToolLayout title={title} description={description}>
+  <section class="card">
+    <h3>Enter your numbers</h3>
+    <div class="row">
+      <div>
+        <label>Balance to transfer</label>
+        <input id="balance" inputmode="decimal" placeholder="6000" value={defaultInputs.balance} />
+      </div>
+      <div>
+        <label>Current APR</label>
+        <input id="apr" inputmode="decimal" placeholder="24.99" value={defaultInputs.aprCurrent} />
+      </div>
+      <div>
+        <label>Monthly payment</label>
+        <input id="payment" inputmode="decimal" placeholder="300" value={defaultInputs.payment} />
+      </div>
+    </div>
+
+    <div class="row two" style="margin-top:10px;">
+      <div>
+        <label>Balance transfer fee (%)</label>
+        <input id="fee" inputmode="decimal" placeholder="3" value={defaultInputs.feePct} />
+      </div>
+      <div>
+        <label>0% intro months</label>
+        <select id="months">
+          <option value="12">12</option>
+          <option value="15" selected>15</option>
+          <option value="18">18</option>
+          <option value="21">21</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="result" class={`result ${initial.savingsEstimate>0 ? "" : "danger"}`} style="margin-top:14px;">
+      <h4>Results</h4>
+      <div class="kv"><span>Estimated savings after fee</span><span class="mono">{fmtMoney(initial.savingsEstimate)}</span></div>
+      <div class="kv"><span>Transfer fee</span><span class="mono">{fmtMoney(initial.feeAmount)}</span></div>
+      <div class="kv"><span>Remaining after promo (at your payment)</span><span class="mono">{fmtMoney(initial.remainingAfterPromo)}</span></div>
+      <div class="disclaimer" style="margin-top:10px;">
+        Estimate uses average balance over promo months. Exact results vary by issuer and payment timing.
+      </div>
+    </div>
+  </section>
+
+  <EmailCapture tool="bt" payload={initialPayload} />
+
+  <section class="card" style="margin-top:16px;">
+    <h3>Recommended next step (V1)</h3>
+    <p class="small">If savings are positive, compare top balance transfer cards. If not, try increasing monthly payment to clear more during the promo.</p>
+    <div class="btnRow">
+      <a class="btn primary" href="#affiliate">See BT picks →</a>
+      <a class="btn" href="/tools/interest-calculator/">Interest calculator</a>
+    </div>
+    <div id="affiliate" class="disclaimer" style="margin-top:12px;">
+      Placeholder: add your affiliate cards list here (with disclosure).
+    </div>
+  </section>
+
+  <script is:inline>
+    (function(){
+      function num(v){ return Number(String(v).replace(/[^0-9.+-]/g,'')); }
+      function fmtMoney(n){ return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n||0); }
+
+      const $b = document.getElementById('balance');
+      const $a = document.getElementById('apr');
+      const $p = document.getElementById('payment');
+      const $f = document.getElementById('fee');
+      const $m = document.getElementById('months');
+      const $r = document.getElementById('result');
+
+      function compute(){
+        const inputs = {
+          balance: num($b.value),
+          aprCurrent: num($a.value),
+          payment: num($p.value),
+          feePct: num($f.value),
+          promoMonths: num($m.value),
+        };
+
+        const balance = Math.max(0, Math.min(1e9, inputs.balance));
+        const aprCurrent = Math.max(0, Math.min(60, inputs.aprCurrent));
+        const payment = Math.max(0, Math.min(1e9, inputs.payment));
+        const feePct = Math.max(0, Math.min(10, inputs.feePct));
+        const promoMonths = Math.max(1, Math.min(36, inputs.promoMonths));
+
+        const monthlyRate = aprCurrent/100/12;
+        const remainingAfterPromo = Math.max(0, balance - payment*promoMonths);
+        const avgBalance = (balance + remainingAfterPromo)/2;
+        const interestEstimate = avgBalance*monthlyRate*promoMonths;
+        const feeAmount = balance*(feePct/100);
+        const savingsEstimate = interestEstimate - feeAmount;
+
+        $r.className = (savingsEstimate>0) ? 'result' : 'result danger';
+        $r.innerHTML = `
+          <h4>Results</h4>
+          <div class="kv"><span>Estimated savings after fee</span><span class="mono">${fmtMoney(savingsEstimate)}</span></div>
+          <div class="kv"><span>Transfer fee</span><span class="mono">${fmtMoney(feeAmount)}</span></div>
+          <div class="kv"><span>Remaining after promo (at your payment)</span><span class="mono">${fmtMoney(remainingAfterPromo)}</span></div>
+          <div class="disclaimer" style="margin-top:10px;">
+            Estimate uses average balance over promo months. Exact results vary by issuer and payment timing.
+          </div>
+        `;
+
+        window.__CVL_PAYLOAD__ = { tool: "bt", inputs, outputs: { savingsEstimate, feeAmount, remainingAfterPromo, promoMonths, feePct } };
+      }
+
+      compute();
+      [$b,$a,$p,$f,$m].forEach(el => el.addEventListener('input', compute));
+      $m.addEventListener('change', compute);
+    })();
+  </script>
+</ToolLayout>

@@ -1,0 +1,89 @@
+---
+import Turnstile from "./Turnstile.astro";
+/**
+ * Props:
+ * - tool: "interest" | "points" | "bt"
+ * - payload: object (inputs + outputs) to send
+ */
+const { tool, payload } = Astro.props;
+---
+<section class="card" style="margin-top:16px;">
+  <h3>Email me this breakdown</h3>
+  <p class="small">We’ll send your results + a simple next-step suggestion. Unsubscribe anytime.</p>
+
+  <form id={`emailForm-${tool}`} class="emailForm" style="margin-top:10px;">
+    <label>Email</label>
+    <input name="email" type="email" required placeholder="you@example.com" />
+
+    <label style="display:flex; gap:10px; align-items:flex-start; margin-top:12px;">
+      <input name="consent" type="checkbox" required style="width:auto; margin-top:2px;" />
+      <span class="small" style="color:rgba(255,255,255,.75)">
+        Send me my results + occasional updates. Unsubscribe anytime.
+      </span>
+    </label>
+
+    <div style="margin-top:12px;">
+      <Turnstile />
+    </div>
+
+    <div class="btnRow">
+      <button class="btn primary" type="submit">Send results →</button>
+      <span class="small" id={`emailStatus-${tool}`} aria-live="polite"></span>
+    </div>
+  </form>
+
+  <p class="disclaimer" style="margin-top:10px;">
+    We only use your email to deliver this result and optional updates. See Privacy for details.
+  </p>
+</section>
+
+<script is:inline>
+  (function(){
+    const tool = {{JSON.stringify(tool)}};
+    let payload = {{JSON.stringify(payload)}};
+    // Use live payload if calculator updates it
+    function getLivePayload(){
+      const p = (window && window.__CVL_PAYLOAD__) ? window.__CVL_PAYLOAD__ : null;
+      return (p && p.tool === tool) ? p : null;
+    }
+    const form = document.getElementById(`emailForm-${tool}`);
+    const statusEl = document.getElementById(`emailStatus-${tool}`);
+
+    function getTurnstileToken(){
+      // Turnstile inserts a hidden input named "cf-turnstile-response"
+      const el = form.querySelector('input[name="cf-turnstile-response"]');
+      return el ? el.value : "";
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      statusEl.textContent = "Sending…";
+
+      const email = form.querySelector('input[name="email"]').value.trim();
+      const consent = form.querySelector('input[name="consent"]').checked;
+      const turnstileToken = getTurnstileToken();
+
+      try{
+        const res = await fetch('/api/send-results', {
+          method:'POST',
+          headers:{'content-type':'application/json'},
+          const live = getLivePayload();
+          const sendPayload = live ? live : { tool, payload };
+          body: JSON.stringify({ email, consent, tool, payload: sendPayload, turnstileToken })
+        });
+        const data = await res.json().catch(() => ({}));
+        if(!res.ok){
+          statusEl.textContent = (data && data.error) ? data.error : "Failed. Try again.";
+          statusEl.style.color = "rgba(251,113,133,.95)";
+          return;
+        }
+        statusEl.textContent = "Sent. Check your inbox.";
+        statusEl.style.color = "rgba(94,234,212,.95)";
+        form.reset();
+      }catch(err){
+        statusEl.textContent = "Network error. Try again.";
+        statusEl.style.color = "rgba(251,113,133,.95)";
+      }
+    });
+  })();
+</script>

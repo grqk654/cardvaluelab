@@ -1,3 +1,4 @@
 User-agent: *
-Disallow:
-Sitemap: /sitemap-index.xml
+Allow: /
+
+Sitemap: https://cardvaluelab.com/sitemap.xml
